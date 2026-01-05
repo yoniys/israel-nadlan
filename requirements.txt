@@ -3,3 +3,4 @@ playwright
 pandas
 openpyxl
 nest_asyncio
+XlsxWriter
