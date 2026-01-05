@@ -13,9 +13,24 @@ This tool allows you to scrape real estate transaction data from the **Israel Ta
 Enter a city and a date range below to generate an Excel report.
 """)
 
+from cities import ISRAEL_CITIES
+from neighborhoods import get_neighborhoods
+
 # Sidebar inputs
 st.sidebar.header("Search Parameters")
-city_input = st.sidebar.text_input("City Name (Hebrew)", value="באר שבע")
+# city_input = st.sidebar.text_input("City Name (Hebrew)", value="באר שבע")
+city_input = st.sidebar.selectbox("City Name (Hebrew)", options=ISRAEL_CITIES, index=ISRAEL_CITIES.index("באר שבע") if "באר שבע" in ISRAEL_CITIES else 0)
+
+# Neighborhood selection (Dependent on City)
+neighborhood_options = get_neighborhoods(city_input)
+# Add "Type Manually" option
+selection_mode = st.sidebar.radio("Neighborhood Selection:", ["Choose from List", "Type Manually"], horizontal=True)
+
+if selection_mode == "Choose from List":
+    neighborhood_input = st.sidebar.selectbox("Neighborhood", options=neighborhood_options)
+else:
+    neighborhood_input = st.sidebar.text_input("Enter Neighborhood Name")
+
 start_date = st.sidebar.date_input("Start Date", value=date.today() - timedelta(days=30))
 end_date = st.sidebar.date_input("End Date", value=date.today())
 
@@ -24,11 +39,15 @@ if st.sidebar.button("Start Scraping", type="primary"):
     if not city_input:
         st.error("Please enter a city name.")
     else:
-        with st.spinner(f"Scraping data for {city_input}... this may take a minute."):
+        status_text = f"Scraping data for {city_input}"
+        if neighborhood_input and neighborhood_input != "כל השכונות":
+            status_text += f" ({neighborhood_input})"
+        status_text += "... this may take a minute."
+        
+        with st.spinner(status_text):
             try:
                 # Call the scraper
-                # Note: start_date and end_date from Streamlit are datetime.date objects
-                df = get_data(city_input, start_date, end_date)
+                df = get_data(city_input, start_date, end_date, neighborhood_input)
                 
                 if not df.empty:
                     st.success(f"Successfully scraped {len(df)} transactions!")
@@ -37,6 +56,7 @@ if st.sidebar.button("Start Scraping", type="primary"):
                     # Convert to Excel in memory
                     buffer = io.BytesIO()
                     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+    # ... rest of code
                         df.to_excel(writer, index=False, sheet_name='Transactions')
                         
                         # Format the Excel (optional polish)
@@ -55,7 +75,7 @@ if st.sidebar.button("Start Scraping", type="primary"):
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
                 else:
-                    st.warning("No data found for the specified criteria (or scraping failed).")
+                    st.warning("לא נמצאו נתונים עבור החיפוש המבוקש. אנא ודא ששם השכונה/העיר אוייתו כהלכה ונסה שנית.")
                     
             except Exception as e:
                 st.error(f"An error occurred: {e}")
