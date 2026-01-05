@@ -68,7 +68,24 @@ if st.sidebar.button("Start Scraping", type="primary"):
                 
                 if not df.empty:
                     st.success(f"Successfully scraped {len(df)} transactions!")
+                    
+                    # Data Processing for Visualization
+                    df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y')
+                    df = df.sort_values('Date')
+                    
+                    # Display Data
                     st.dataframe(df)
+
+                    # Charts Section
+                    st.subheader("Price Trends Analysis")
+                    
+                    # 1. Price vs Date (Scatter/Line)
+                    # Resample to monthly average to show trend clearly
+                    df_trend = df.set_index('Date')
+                    monthly_avg = df_trend['Price'].resample('ME').mean()
+                    
+                    st.line_chart(monthly_avg)
+                    st.caption("Average Deal Price over Time (Monthly Aggregation)")
                     
                     # Convert to Excel in memory
                     buffer = io.BytesIO()
