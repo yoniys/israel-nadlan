@@ -1,8 +1,25 @@
 import streamlit as st
 import pandas as pd
 from datetime import date, timedelta
-from scraper import get_data
 import io
+import os
+import subprocess
+
+# Ensure Playwright browsers are installed (for Streamlit Cloud)
+try:
+    from playwright.async_api import async_playwright
+except ImportError:
+    os.system("pip install playwright")
+
+# Check if we need to install browser binaries
+if not os.path.exists("playwright_installed.flag"):
+    st.info("Installing browser drivers for the first time... this may take a minute.")
+    subprocess.run(["playwright", "install", "chromium"], check=True)
+    # Create a flag file so we don't run this every time (optional, but good for restart speed)
+    with open("playwright_installed.flag", "w") as f:
+        f.write("installed")
+
+from scraper import get_data
 
 # Set page config
 st.set_page_config(page_title="Israel Real Estate Scraper", page_icon="🏘️")
