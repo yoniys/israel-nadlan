@@ -79,8 +79,9 @@ async def fetch_nadlan_data(city: str, start_date: datetime.date, end_date: date
             # Create a range of dates
             delta = end_date - start_date
             
-            # Target roughly 1000-3000 records for a large Excel file
-            num_records = random.randint(1000, 3000)
+            # Target roughly 1000-100000 records for a large Excel file
+            # We allow a very large range as requested
+            num_records = random.randint(50000, 100000)
             
             platforms = ["Yad2", "Madlan", "Facebook Marketplace", "Komo", "Broker", "Direct from Developer"]
             

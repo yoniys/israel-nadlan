@@ -73,8 +73,9 @@ if st.sidebar.button("Start Scraping", type="primary"):
                     df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y')
                     df = df.sort_values('Date')
                     
-                    # Display Data
-                    st.dataframe(df)
+                    # Display Data (Collapsible)
+                    with st.expander(f"View Data ({len(df)} rows)", expanded=False):
+                        st.dataframe(df)
 
                     # Charts Section
                     st.subheader("Price Trends Analysis")
