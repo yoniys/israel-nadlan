@@ -80,12 +80,13 @@ if st.sidebar.button("Start Scraping", type="primary"):
                     st.subheader("Price Trends Analysis")
                     
                     # 1. Price vs Date (Scatter/Line)
-                    # Resample to monthly average to show trend clearly
+                    # Resample to monthly average of Price PER SQM
                     df_trend = df.set_index('Date')
-                    monthly_avg = df_trend['Price'].resample('ME').mean()
+                    # Ensure numeric conversion if needed, though scraper returns ints
+                    monthly_avg = df_trend['Price/Sqm'].resample('ME').mean()
                     
                     st.line_chart(monthly_avg)
-                    st.caption("Average Deal Price over Time (Monthly Aggregation)")
+                    st.caption("Average Price per Sqm over Time (Monthly Aggregation) - מחיר למ״ר")
                     
                     # Convert to Excel in memory
                     buffer = io.BytesIO()
