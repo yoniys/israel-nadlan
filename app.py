@@ -60,6 +60,28 @@ min_rooms, max_rooms = st.sidebar.slider(
     step=0.5
 )
 
+min_floor, max_floor = st.sidebar.slider(
+    "Select Floor Range",
+    min_value=-1,
+    max_value=30,
+    value=(-1, 30),
+    step=1
+)
+
+min_sqm, max_sqm = st.sidebar.slider(
+    "Select Sqm Range",
+    min_value=20,
+    max_value=500,
+    value=(20, 500),
+    step=5
+)
+
+exclude_abnormal = st.sidebar.checkbox(
+    "Exclude Abnormal Deals", 
+    value=False,
+    help="Excludes partial ownership deals (<100%) and statistical outliers."
+)
+
 # Main section
 if st.sidebar.button("Start Scraping", type="primary"):
     if not city_input:
@@ -75,7 +97,19 @@ if st.sidebar.button("Start Scraping", type="primary"):
             try:
                 # Call the scraper
                 # Pass room parameters
-                df = get_data(city_input, start_date, end_date, neighborhood_input, min_rooms=min_rooms, max_rooms=max_rooms)
+                df = get_data(
+                    city_input, 
+                    start_date, 
+                    end_date, 
+                    neighborhood_input, 
+                    min_rooms=min_rooms, 
+                    max_rooms=max_rooms,
+                    min_floor=min_floor,
+                    max_floor=max_floor,
+                    min_sqm=min_sqm,
+                    max_sqm=max_sqm,
+                    exclude_abnormal=exclude_abnormal
+                )
                 
                 if not df.empty:
                     st.success(f"Successfully scraped {len(df)} transactions!")
