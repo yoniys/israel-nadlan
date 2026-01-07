@@ -8,7 +8,7 @@ from neighborhoods import get_neighborhoods
 
 nest_asyncio.apply()
 
-async def fetch_nadlan_data(city: str, start_date: datetime.date, end_date: datetime.date, neighborhood: str = None):
+async def fetch_nadlan_data(city: str, start_date: datetime.date, end_date: datetime.date, neighborhood: str = None, min_rooms: float = 0, max_rooms: float = 100):
     """
     Scrapes real estate transaction data from the Israel Tax Authority (Nadlan.gov.il).
     Note: Government sites often have complex anti-bot measures or dynamic loading.
@@ -19,7 +19,7 @@ async def fetch_nadlan_data(city: str, start_date: datetime.date, end_date: date
     start_str = start_date.strftime("%d/%m/%Y")
     end_str = end_date.strftime("%d/%m/%Y")
     
-    print(f"[Scraper] Starting search for {city} ({neighborhood if neighborhood else 'All'}) from {start_str} to {end_str}")
+    print(f"[Scraper] Starting search for {city} ({neighborhood if neighborhood else 'All'}) from {start_str} to {end_str}, Rooms: {min_rooms}-{max_rooms}")
     
     data = []
 
@@ -91,7 +91,17 @@ async def fetch_nadlan_data(city: str, start_date: datetime.date, end_date: date
                 d = start_date + timedelta(days=random_days)
                 
                 # Random realistic data
-                rooms = random.choice([3, 3.5, 4, 4.5, 5])
+                # Weighted distribution for rooms: most are 3-5
+                weighted_rooms = [2, 2.5, 3, 3, 3, 3.5, 3.5, 4, 4, 4, 4.5, 5, 5, 6]
+                if random.random() < 0.1: # 10% chance of unusual size
+                    rooms = random.choice([1, 1.5, 7, 8, 9, 10])
+                else:
+                    rooms = random.choice(weighted_rooms)
+                
+                # Apply filter
+                if not (min_rooms <= rooms <= max_rooms):
+                    continue
+
                 floor = random.randint(1, 25)
                 # Price somewhat correlated to rooms
                 base_price = 1200000 + (rooms * 200000)
@@ -132,5 +142,5 @@ async def fetch_nadlan_data(city: str, start_date: datetime.date, end_date: date
     return df
 
 # Helper to run async in sync context (for Streamlit)
-def get_data(city, start, end, neighborhood=None):
-    return asyncio.run(fetch_nadlan_data(city, start, end, neighborhood))
+def get_data(city, start, end, neighborhood=None, min_rooms=0, max_rooms=100):
+    return asyncio.run(fetch_nadlan_data(city, start, end, neighborhood, min_rooms, max_rooms))

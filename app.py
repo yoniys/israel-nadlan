@@ -51,6 +51,15 @@ else:
 start_date = st.sidebar.date_input("Start Date", value=date.today() - timedelta(days=30))
 end_date = st.sidebar.date_input("End Date", value=date.today())
 
+st.sidebar.header("Filters")
+min_rooms, max_rooms = st.sidebar.slider(
+    "Select Room Range",
+    min_value=1.0, 
+    max_value=10.0, 
+    value=(1.0, 10.0),
+    step=0.5
+)
+
 # Main section
 if st.sidebar.button("Start Scraping", type="primary"):
     if not city_input:
@@ -59,12 +68,14 @@ if st.sidebar.button("Start Scraping", type="primary"):
         status_text = f"Scraping data for {city_input}"
         if neighborhood_input and neighborhood_input != "כל השכונות":
             status_text += f" ({neighborhood_input})"
+        status_text += f" | Rooms: {min_rooms}-{max_rooms}"
         status_text += "... this may take a minute."
         
         with st.spinner(status_text):
             try:
                 # Call the scraper
-                df = get_data(city_input, start_date, end_date, neighborhood_input)
+                # Pass room parameters
+                df = get_data(city_input, start_date, end_date, neighborhood_input, min_rooms=min_rooms, max_rooms=max_rooms)
                 
                 if not df.empty:
                     st.success(f"Successfully scraped {len(df)} transactions!")
@@ -114,7 +125,7 @@ if st.sidebar.button("Start Scraping", type="primary"):
                     st.warning("לא נמצאו נתונים עבור החיפוש המבוקש. אנא ודא ששם השכונה/העיר אוייתו כהלכה ונסה שנית.")
                     
             except Exception as e:
-                st.error(f"An error occurred: {e}")
+                st.error(f"Redaction Error: {e}")
 
 st.markdown("---")
 st.caption("Note: This tool uses Playwright for automation. Ensure you have the necessary drivers installed if running locally.")
