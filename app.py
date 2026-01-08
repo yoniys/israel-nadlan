@@ -35,6 +35,10 @@ from neighborhoods import get_neighborhoods
 
 # Sidebar inputs
 st.sidebar.header("Search Parameters")
+
+# DATA SOURCE MODE (Mock vs Live)
+use_mock = st.sidebar.checkbox("Use Simulation (Safe Mode)", value=True, help="Uncheck to attempt REAL scraping (may fail on Cloud due to blocking).")
+
 # city_input = st.sidebar.text_input("City Name (Hebrew)", value="באר שבע")
 city_input = st.sidebar.selectbox("City Name (Hebrew)", options=ISRAEL_CITIES, index=ISRAEL_CITIES.index("באר שבע") if "באר שבע" in ISRAEL_CITIES else 0)
 
@@ -90,9 +94,13 @@ if st.sidebar.button("Start Scraping", type="primary"):
         status_text = f"Scraping data for {city_input}"
         if neighborhood_input and neighborhood_input != "כל השכונות":
             status_text += f" ({neighborhood_input})"
-        status_text += f" | Rooms: {min_rooms}-{max_rooms}"
-        status_text += "... this may take a minute."
         
+        mode_text = "SIMULATION" if use_mock else "LIVE SITE"
+        status_text += f" | Mode: {mode_text}"
+        
+        if not use_mock:
+            st.warning("⚠️ Running in LIVE mode. If this hangs or returns 0 results, the site might be blocking this IP.")
+            
         with st.spinner(status_text):
             try:
                 # Call the scraper
@@ -108,15 +116,17 @@ if st.sidebar.button("Start Scraping", type="primary"):
                     max_floor=max_floor,
                     min_sqm=min_sqm,
                     max_sqm=max_sqm,
-                    exclude_abnormal=exclude_abnormal
+                    exclude_abnormal=exclude_abnormal,
+                    use_mock_data=use_mock # Pass the flag
                 )
                 
                 if not df.empty:
                     st.success(f"Successfully scraped {len(df)} transactions!")
                     
                     # Data Processing for Visualization
-                    df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y')
-                    df = df.sort_values('Date')
+                    if 'Date' in df.columns:
+                        df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y')
+                        df = df.sort_values('Date')
                     
                     # Display Data (Collapsible)
                     with st.expander(f"View Data ({len(df)} rows)", expanded=False):
@@ -127,12 +137,13 @@ if st.sidebar.button("Start Scraping", type="primary"):
                     
                     # 1. Price vs Date (Scatter/Line)
                     # Resample to monthly average of Price PER SQM
-                    df_trend = df.set_index('Date')
-                    # Ensure numeric conversion if needed, though scraper returns ints
-                    monthly_avg = df_trend['Price/Sqm'].resample('ME').mean()
-                    
-                    st.line_chart(monthly_avg)
-                    st.caption("Average Price per Sqm over Time (Monthly Aggregation) - מחיר למ״ר")
+                    if 'Date' in df.columns and 'Price/Sqm' in df.columns:
+                        df_trend = df.set_index('Date')
+                        # Ensure numeric conversion if needed, though scraper returns ints
+                        monthly_avg = df_trend['Price/Sqm'].resample('ME').mean()
+                        
+                        st.line_chart(monthly_avg)
+                        st.caption("Average Price per Sqm over Time (Monthly Aggregation) - מחיר למ״ר")
                     
                     # Convert to Excel in memory
                     buffer = io.BytesIO()
@@ -156,10 +167,13 @@ if st.sidebar.button("Start Scraping", type="primary"):
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
                 else:
-                    st.warning("לא נמצאו נתונים עבור החיפוש המבוקש. אנא ודא ששם השכונה/העיר אוייתו כהלכה ונסה שנית.")
+                    if not use_mock:
+                         st.error("LIVE SCRAPING FAILED OR BLOCKED. Please try toggling 'Use Simulation' in sidebar.")
+                    else:
+                        st.warning("לא נמצאו נתונים עבור החיפוש המבוקש. אנא ודא ששם השכונה/העיר אוייתו כהלכה ונסה שנית.")
                     
             except Exception as e:
-                st.error(f"Redaction Error: {e}")
+                st.error(f"Error: {e}")
 
 st.markdown("---")
 st.caption("Note: This tool uses Playwright for automation. Ensure you have the necessary drivers installed if running locally.")
